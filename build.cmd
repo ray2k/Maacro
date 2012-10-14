@@ -42,6 +42,8 @@ msbuild .\Maacro\Maacro.csproj /t:Build /p:SolutionDir=%CD% /p:Platform=x86 /p:O
 @copy /Y .\build\x64\en\*.dll .\build\x64\*.dll
 @rmdir /S /Q .\build\x86\en\
 @rmdir /S /Q .\build\x64\en\
+@copy /Y .\$build.readme.txt .\build\x86\README.txt
+@copy /Y .\$build.readme.txt .\build\x64\README.txt
 
 .\Tools\7za a .\Build\Maacro-1.0.0-x86.zip -r .\build\x86\*.*
 .\Tools\7za a .\Build\Maacro-1.0.0-x64.zip -r .\build\x64\*.*
