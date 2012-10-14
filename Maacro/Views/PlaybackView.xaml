@@ -1,0 +1,58 @@
+﻿<UserControl x:Class="Maacro.Views.PlaybackView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+             xmlns:vm="clr-namespace:Maacro.ViewModel"
+             mc:Ignorable="d"
+             d:DesignHeight="475" d:DesignWidth="785" Width="785" Height="475" Background="White">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Grid.Row="0" Grid.Column="0" Visibility="{Binding Path=ErrorVisibility}">
+            <TextBlock FontWeight="Bold" Text="Playback disabled because of these validation errors:" Visibility="{Binding Path=ErrorVisibility}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="Red"/>
+            <TextBlock TextWrapping="Wrap" Visibility="{Binding Path=ErrorVisibility}" Text="{Binding Path=ValidationErrorText}" Foreground="Red" HorizontalAlignment="Left" VerticalAlignment="Center"/>            
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Left" Margin="0">
+            <Button Content="Play" HorizontalAlignment="Left" VerticalAlignment="Center" Width="75" Height="37" IsEnabled="{Binding Path=PlaybackEnabled}" Command="{Binding Path=StartPlayback}" />
+            <Label Content="Press ESC to stop playback" HorizontalAlignment="Left" VerticalAlignment="Center"/>            
+            <Label Content="Delay between clicking UI elements:" VerticalAlignment="Center" Margin="75,0,0,0"/>
+            <Slider VerticalAlignment="Center" Width="150" IsEnabled="{Binding Path=PlaybackEnabled}" Margin="10,0,0,0" Value="{Binding Path=UIDelay}" Minimum="500" Maximum="3500" IsSnapToTickEnabled="True" Ticks="500,750,1000,1250,1500,1750,2000,2250,2500,2750,3000,3250,3500"></Slider>
+            <Label VerticalAlignment="Center" Content="{Binding Path=UIDelayText}"/>
+        </StackPanel>        
+        <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="0,10,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="176"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="0" Grid.Column="0" Content="{Binding Path=IterationText}"></Label>
+                <Label Grid.Row="0" Grid.Column="1" Content="{Binding Path=StepText}" />
+                <ProgressBar Grid.Row="0" Grid.Column="2" Width="200" Height="20" Maximum="{Binding Path=CurrentStepChunkCount}" Value="{Binding Path=StepProgress}" Grid.ColumnSpan="2"></ProgressBar>
+            </Grid>
+            <ProgressBar Minimum="0" Height="20" Width="Auto" Maximum="{Binding Path=TotalSteps}" IsEnabled="{Binding Path=PlaybackEnabled}" Value="{Binding Path=StepNumber}"/>
+        </StackPanel>        
+        <DataGrid Grid.Row="3" Grid.Column="0" ItemsSource="{Binding Path=MacroSteps}" VerticalContentAlignment="Stretch" AutoGenerateColumns="False" Margin="0,15,0,0" SelectedItem="{Binding Path=CurrentStep}" CanUserSortColumns="False" CanUserReorderColumns="False" CanUserDeleteRows="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserAddRows="False" SelectionMode="Single">
+            <i:Interaction.Behaviors>
+                <vm:ScrollIntoViewBehavior/>                
+            </i:Interaction.Behaviors>  
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Step #" IsReadOnly="True" Binding="{Binding Path=StepNumber}"/>
+                <DataGridTextColumn Header="Description" IsReadOnly="True" Binding="{Binding Path=Description}" Width="*"></DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
