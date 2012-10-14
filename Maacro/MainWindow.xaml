@@ -19,9 +19,9 @@
             <ColumnDefinition Width="763*"/>
         </Grid.ColumnDefinitions>        
         <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Center" Margin="6,0,37,0">
-            <Button Content="1 - Configure" Command="{Binding Path=GotoConfiguration}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
-            <Button Content="2 - Build" Command="{Binding Path=GotoBuilding}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
-            <Button Content="3 - Play" Command="{Binding Path=GotoPlayback}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
+            <Button Content="Configure" Command="{Binding Path=GotoConfiguration}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
+            <Button Content="Build" Command="{Binding Path=GotoBuilding}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
+            <Button Content="Play" Command="{Binding Path=GotoPlayback}" Width="200" Height="50" Margin="20" IsEnabled="{Binding Path=EditingEnabled}"/>
         </StackPanel>        
         <ContentControl Name="viewContent" Grid.Column="0" Grid.Row="1" Height="475" Width="785" Content="{Binding Path=CurrentViewModel}" Grid.ColumnSpan="2" Margin="4"/>
     </Grid>
