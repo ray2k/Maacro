@@ -85,7 +85,9 @@ namespace Maacro.Tests.ViewModel
                                 MacroData.Current.Deployment, 
                                 MacroData.Current.ScreenElements, 
                                 MacroData.Current.UIDelay, 
-                                MacroData.Current.HeroPageCount)).Returns(
+                                MacroData.Current.HeroPageCount,
+                                MacroData.Current.Length
+                                )).Returns(
                 new List<MacroStep>() { new MacroClickStep() }
             );
             

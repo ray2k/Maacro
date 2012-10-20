@@ -30,7 +30,7 @@ namespace Maacro.Tests.Services
 
         public void When_A_Macro_Is_Generated()
         {
-            MacroSteps = Generator.GenerateMacro(Deployment, ScreenElements, 1000, 6).ToList();
+            MacroSteps = Generator.GenerateMacro(Deployment, ScreenElements, 1000, 6, DeployLength.ThreeMinute).ToList();
         }
 
         public void Then_The_Macro_Should_Deploy_All_Heroes_Accordingly()

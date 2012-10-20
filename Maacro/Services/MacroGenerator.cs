@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Maacro.Services
 {
-    public class MacroGenerator : Maacro.Services.IMacroGenerator
+    public class MacroGenerator : IMacroGenerator
     {
         private MacroBuilder Builder { get; set; }
         private Dictionary<int, ScreenElementType> BayLookup { get; set; }
@@ -17,7 +17,7 @@ namespace Maacro.Services
         {            
         }
 
-        public IEnumerable<MacroStep> GenerateMacro(IEnumerable<DeploymentSlot> deployment, IEnumerable<ScreenElement> screenElements,  int uiDelay, int totalHeroPages)
+        public IEnumerable<MacroStep> GenerateMacro(IEnumerable<DeploymentSlot> deployment, IEnumerable<ScreenElement> screenElements,  int uiDelay, int totalHeroPages, DeployLength length)
         {
             this.Builder = new MacroBuilder(screenElements, uiDelay);
             int deploymentNumber = 1;
@@ -60,8 +60,14 @@ namespace Maacro.Services
                 deploymentNumber++;
             }
 
-            int standardDelay = (int) new TimeSpan(0, 3, 3).TotalMilliseconds;
-            Builder.AddDelay(standardDelay);
+            int deployDelay = 0;
+            
+            if (length == DeployLength.TwentyMinute)
+                deployDelay = (int)new TimeSpan(0, 20, 3).TotalMilliseconds;
+            else
+                deployDelay = (int)new TimeSpan(0, 3, 3).TotalMilliseconds;
+            
+            Builder.AddDelay(deployDelay);
 
             int restockingDelay = deployment.Count() * 2750;
 

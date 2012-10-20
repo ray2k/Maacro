@@ -7,6 +7,12 @@ using System.Diagnostics;
 
 namespace Maacro.Model
 {
+    public enum DeployLength
+    {
+        ThreeMinute = 0,
+        TwentyMinute = 1
+    }
+
     public class MacroData : ReactiveObject
     {
         private int _UIDelay = 0;
@@ -14,6 +20,7 @@ namespace Maacro.Model
         private ReactiveCollection<ScreenElement> _ScreenElements;
         private ReactiveCollection<DeploymentSlot> _Deployment;
         private static object _lock = new object();
+        private DeployLength _Length = DeployLength.ThreeMinute;
 
         public static void SetCurrent(MacroData currentData)
         {
@@ -27,10 +34,10 @@ namespace Maacro.Model
 
         public static MacroData CreateDefault()
         {
-            return new MacroData(ScreenElement.GetDefaults(), new DeploymentSlot[0], 1500, 1);
+            return new MacroData(ScreenElement.GetDefaults(), new DeploymentSlot[0], 1500, 1, DeployLength.ThreeMinute);
         }
 
-        public MacroData(IEnumerable<ScreenElement> elements, IEnumerable<DeploymentSlot> deployment, int uiDelay, int heroPageCount)
+        public MacroData(IEnumerable<ScreenElement> elements, IEnumerable<DeploymentSlot> deployment, int uiDelay, int heroPageCount, DeployLength length)
         {
             _Deployment = new ReactiveCollection<DeploymentSlot>(deployment);
             _ScreenElements = new ReactiveCollection<ScreenElement>(elements);
@@ -38,10 +45,11 @@ namespace Maacro.Model
             _ScreenElements.ChangeTrackingEnabled = true;
             _UIDelay = uiDelay;
             _HeroPageCount = heroPageCount;
+            _Length = length;
         }
 
         public MacroData()
-            : this(new ScreenElement[0], new DeploymentSlot[0], 1500, 1)
+            : this(new ScreenElement[0], new DeploymentSlot[0], 1500, 1, DeployLength.ThreeMinute)
         {   
         }
 
@@ -65,6 +73,12 @@ namespace Maacro.Model
         {
             get { return _HeroPageCount; }
             set { _HeroPageCount = this.RaiseAndSetIfChanged(md => md.HeroPageCount, value); }
+        }
+
+        public DeployLength Length
+        {
+            get { return _Length; }
+            set { _Length = this.RaiseAndSetIfChanged(vm => vm.Length, value); }
         }
     }
 }

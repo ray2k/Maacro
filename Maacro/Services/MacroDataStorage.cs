@@ -33,7 +33,8 @@ namespace Maacro.Services
                 ).ToList();
 
                 result.UIDelay = source.UIDelay;
-                result.HeroPageCount = source.HeroPageCount;                
+                result.HeroPageCount = source.HeroPageCount;
+                result.Length = source.Length;
 
                 result.ScreenElements = source.ScreenElements.Select(p => 
                     new Tuple<ScreenElementType, string, int, int>(p.ElementType, p.Name, p.X, p.Y)
@@ -45,7 +46,8 @@ namespace Maacro.Services
             public List<Tuple<int, int>> Deployment { get; set; }
             public List<Tuple<ScreenElementType, string, int, int>> ScreenElements { get; set; }
             public int UIDelay { get; set; }
-            public int HeroPageCount { get; set; }            
+            public int HeroPageCount { get; set; }
+            public DeployLength Length { get; set; }
 
             internal MacroData ToMacroData()
             {
@@ -65,7 +67,7 @@ namespace Maacro.Services
                     }
                 ).ToList();
 
-                return new MacroData(elementList, deploymentList, this.UIDelay, this.HeroPageCount);
+                return new MacroData(elementList, deploymentList, this.UIDelay, this.HeroPageCount, this.Length);            
             }
         }
 

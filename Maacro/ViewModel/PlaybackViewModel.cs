@@ -36,6 +36,9 @@ namespace Maacro.ViewModel
         private int _StepProgress = 0;
         private int _CurrentStepChunkCount = 0;
         private MacroStep _CurrentStep;
+        private string _DurationText;
+        private bool _IsThreeMinute = false;
+        private bool _IsTwentyMinute = false;
 
         protected IMacroDataValidator Validator { get; private set; }
         protected IMacroGenerator Generator { get; private set; }
@@ -48,10 +51,12 @@ namespace Maacro.ViewModel
             this.Generator = macroGenerator;
             this.Player = player;
             this.KeyboardListener = keyboardListener;
-            this.UIDelay = 2000;
+            this.UIDelay = MacroData.Current.UIDelay;
             this.StepProgress = 0;
             this.CurrentStepChunkCount = 1;
-            this.TotalSteps = 1;            
+            this.TotalSteps = 1;
+            this.IsThreeMinute = (MacroData.Current.Length == DeployLength.ThreeMinute);
+            this.IsTwentyMinute = (MacroData.Current.Length == DeployLength.TwentyMinute);
 
             this.KeyboardListener.KeyUp += OnKeyUp;
 
@@ -66,6 +71,16 @@ namespace Maacro.ViewModel
                     MessageBus.SendMessage<PlaybackStartedMessage>(new PlaybackStartedMessage());
                 }
             );
+
+            this.MakeThreeMinute = ReactiveCommand.Create(p => true, p =>
+                {
+                    MacroData.Current.Length = DeployLength.ThreeMinute;
+                });
+
+            this.MakeTwentyMinute = ReactiveCommand.Create(p => true, p =>
+                {
+                    MacroData.Current.Length = DeployLength.TwentyMinute;
+                });
             
             this.MacroSteps = new ReactiveCollection<MacroStep>();
             this.ValidationErrors = new ReactiveCollection<string>();
@@ -85,14 +100,15 @@ namespace Maacro.ViewModel
                 }
             );
 
-            this.ObservableForProperty(p => p.UIDelay, false)
-                .Subscribe(ch =>
-                    {
-                        if (_generating)
-                            return;
-                        
+
+            MacroData.Current.Changed.Subscribe(ch =>
+                {
+                    this.UIDelay = MacroData.Current.UIDelay;
+                    this.IsThreeMinute = (MacroData.Current.Length == DeployLength.ThreeMinute);
+                    this.IsTwentyMinute = (MacroData.Current.Length == DeployLength.TwentyMinute);
+                    if (!_generating)
                         TryMacroGeneration();
-                    }
+                }
             );
 
             this.Player.IterationStarted.Subscribe(p =>
@@ -169,17 +185,26 @@ namespace Maacro.ViewModel
             {
                 this.ErrorVisibility = Visibility.Visible;
                 this.MacroSteps.Clear();
+                this.DurationText = string.Empty;
             }
             else
             {
                 this.ErrorVisibility = Visibility.Collapsed;
                 this.MacroSteps.Clear();
 
-                var stepList = this.Generator.GenerateMacro(MacroData.Current.Deployment, MacroData.Current.ScreenElements, MacroData.Current.UIDelay, MacroData.Current.HeroPageCount);
+                var stepList = this.Generator.GenerateMacro(MacroData.Current.Deployment, MacroData.Current.ScreenElements, MacroData.Current.UIDelay, MacroData.Current.HeroPageCount, MacroData.Current.Length);
+
                 foreach (var step in stepList)
                     this.MacroSteps.Add(step);
 
                 this.TotalSteps = this.MacroSteps.Count;
+                var totalWaitTime = this.MacroSteps.OfType<MacroDelayStep>().Sum(p => p.Delay);
+                TimeSpan totalWait = TimeSpan.FromMilliseconds((double)totalWaitTime);
+                this.DurationText = string.Format("Approximate time for one iteration: {0} minutes {1} second(s)", totalWait.Minutes, totalWait.Seconds);
+
+                Trace.WriteLine(DateTime.Now.ToString() + ", after generation Length = " + MacroData.Current.Length.ToString());
+                this.IsThreeMinute = (MacroData.Current.Length == DeployLength.ThreeMinute);
+                this.IsTwentyMinute = (MacroData.Current.Length == DeployLength.TwentyMinute);
             }
             _generating = false;
         }
@@ -209,6 +234,12 @@ namespace Maacro.ViewModel
                 var ts = TimeSpan.FromMilliseconds((double)value);
                 UIDelayText = string.Format("{0} second(s)", ts.TotalSeconds);
             }
+        }
+
+        public string DurationText
+        {
+            get { return _DurationText; }
+            set { _DurationText = this.RaiseAndSetIfChanged(vm => vm.DurationText, value); }
         }
 
         public string UIDelayText
@@ -257,9 +288,33 @@ namespace Maacro.ViewModel
         {
             get { return _CurrentStepChunkCount; }
             set { _CurrentStepChunkCount = this.RaiseAndSetIfChanged(vm => vm.CurrentStepChunkCount, value); }
-        }    
+        }
+
+        public bool IsThreeMinute
+        {
+            get { return _IsThreeMinute; }
+            set 
+            {
+                _IsThreeMinute = this.RaiseAndSetIfChanged(vm => vm.IsThreeMinute, value);
+                if (value)
+                    MacroData.Current.Length = DeployLength.ThreeMinute;
+            }
+        }
+
+        public bool IsTwentyMinute
+        {
+            get { return _IsTwentyMinute; }
+            set 
+            { 
+                _IsTwentyMinute = this.RaiseAndSetIfChanged(vm => vm.IsTwentyMinute, value);
+                if (value)
+                    MacroData.Current.Length = DeployLength.TwentyMinute;
+            }
+        }
 
         public ICommand StartPlayback { get; set; }
+        public ICommand MakeThreeMinute { get; set; }
+        public ICommand MakeTwentyMinute { get; set; }
 
         public Visibility ErrorVisibility
         {

@@ -24,5 +24,15 @@ namespace Maacro.Views
             InitializeComponent();
             this.SetRuntimeBackground();
         }
+
+        private void RadioButton_Checked_1(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RadioButton_Checked_2(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
