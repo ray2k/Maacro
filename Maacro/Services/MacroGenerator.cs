@@ -60,14 +60,39 @@ namespace Maacro.Services
                 deploymentNumber++;
             }
 
-            int deployDelay = 0;
-            
+            var deployDelay = TimeSpan.Zero;
+
             if (length == DeployLength.TwentyMinute)
-                deployDelay = (int)new TimeSpan(0, 20, 3).TotalMilliseconds;
+            {
+                deployDelay = new TimeSpan(0, 20, 3);
+
+                int remainingDelay = (int) deployDelay.TotalMilliseconds;
+                int totalDelayAccountedFor = 0;
+
+                while (totalDelayAccountedFor < (int)deployDelay.TotalMilliseconds)
+                {
+                    int batchSizeInMs = (int)TimeSpan.FromMinutes(4.0).TotalMilliseconds;
+                    if (remainingDelay > batchSizeInMs)
+                    {
+                        Builder.AddDelay(batchSizeInMs);
+                        Builder.AddClick(ScreenElementType.NextHeroPage);
+                        
+                        totalDelayAccountedFor += batchSizeInMs;
+                        remainingDelay -= batchSizeInMs;
+                    }
+                    else
+                    {
+                        Builder.AddDelay(remainingDelay); //whatever's left thats < batchsize                        
+                        totalDelayAccountedFor += remainingDelay;
+                        remainingDelay = 0;
+                    }
+                }
+            }
             else
-                deployDelay = (int)new TimeSpan(0, 3, 3).TotalMilliseconds;
-            
-            Builder.AddDelay(deployDelay);
+            {
+                deployDelay = new TimeSpan(0, 3, 3);
+                Builder.AddDelay((int)deployDelay.TotalMilliseconds);
+            }            
 
             int restockingDelay = deployment.Count() * 2750;
 

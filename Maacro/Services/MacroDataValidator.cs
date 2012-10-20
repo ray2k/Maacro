@@ -25,15 +25,15 @@ namespace Maacro.Services
             List<ScreenElementType> required = new List<ScreenElementType>()
             {
                 ScreenElementType.CollectAll,
-                ScreenElementType.ConfirmButton
+                ScreenElementType.ConfirmButton,
+                ScreenElementType.NextHeroPage // for clicking empty space (idle-prevention)
             };
 
             if (source.Deployment.Count > 0)
             {
                 int maxPage = source.Deployment.Max(p => p.PageNumber);
                 if (maxPage > 1)
-                {
-                    required.Add(ScreenElementType.NextHeroPage);
+                {                    
                     required.Add(ScreenElementType.PrevHeroPage);
                 }
             }
