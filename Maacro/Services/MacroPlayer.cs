@@ -1,8 +1,12 @@
-﻿using Maacro.Model;
+﻿using AForge.Imaging;
+using Maacro.Model;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -42,9 +46,10 @@ namespace Maacro.Services
             _stepProgressUpdatedSubject = new ScheduledSubject<int>(RxApp.DeferredScheduler);
         }
 
-        public void Play(IEnumerable<MacroStep> macro)
+        public void Play(IEnumerable<MacroStep> macro, bool clickVerification, int uiDelay)
         {
-            PlaybackTask = new Task(() => PlayMacro(macro));
+            _steps = macro.ToList();
+            PlaybackTask = new Task(() => PlayMacro(macro, clickVerification, uiDelay));
             PlaybackTask.Start();
         }
 
@@ -62,6 +67,7 @@ namespace Maacro.Services
         private ISubject<int> _stepCompletedSubject;
         private ISubject<StepStartedInfo> _stepStartedSubject;
         private ISubject<int> _stepProgressUpdatedSubject;
+        private IList<MacroStep> _steps = null;
 
         public IObservable<int> IterationStarted
         {
@@ -95,7 +101,7 @@ namespace Maacro.Services
             }
         }
 
-        private void PlayMacro(IEnumerable<MacroStep> macro)
+        private void PlayMacro(IEnumerable<MacroStep> macro, bool verifyClicks, int uiDelay)
         {
             bool breakout = false;
 
@@ -116,7 +122,7 @@ namespace Maacro.Services
                     }
 
                     if (step is MacroClickStep)
-                        Play(step as MacroClickStep, stepNumber);
+                        Play(step as MacroClickStep, stepNumber, verifyClicks, uiDelay);
 
                     if (step is MacroDelayStep)
                         Play(step as MacroDelayStep, stepNumber);
@@ -166,17 +172,194 @@ namespace Maacro.Services
             _stepCompletedSubject.OnNext(stepNumber);
         }
 
-        private void Play(MacroClickStep macroClickStep, int stepNumber)
+        private void Play(MacroClickStep macroClickStep, int stepNumber, bool verify, int uiDelay)
         {
             if (WaitHandle.WaitOne(1))
                 return;
 
-            _stepStartedSubject.OnNext(new StepStartedInfo(stepNumber, 1));
+            var elementLower = macroClickStep.ScreenElement.ToString().ToLower();
 
-            _stepProgressUpdatedSubject.OnNext(1);
-            LeftMouseClick(macroClickStep.X, macroClickStep.Y);
+            if (verify == true && 
+                (
+                    elementLower.StartsWith("jetbay") || 
+                    elementLower.StartsWith("collect")
+                ))
+            {
+                PlayAndVerify(macroClickStep, stepNumber);
+            }
+            else 
+            {
+                _stepStartedSubject.OnNext(new StepStartedInfo(stepNumber, 1));
+
+                _stepProgressUpdatedSubject.OnNext(1);
+                LeftMouseClick(macroClickStep.X, macroClickStep.Y);
+
+                _stepCompletedSubject.OnNext(stepNumber);
+            }
+        }
+
+        private void PlayAndVerify(MacroClickStep macroClickStep, int stepNumber)
+        {
+            Debug.WriteLine("PlayAndVerify for #{0} {1}", macroClickStep.StepNumber, macroClickStep.Description);
+
+            Bitmap beforeClickSmallImage = null;
+
+            if (WaitHandle.WaitOne(1))
+                return;
+
+            int shortDelay = 500;
+
+            // move cursor to position
+            SetCursorPos(macroClickStep.X, macroClickStep.Y);
+
+            // slight delay to allow hover/ui effects to show up
+            if (WaitHandle.WaitOne(1))
+                return;
+            Debug.WriteLine("Waiting {0}ms", shortDelay);
+            Thread.Sleep(shortDelay);
+            if (WaitHandle.WaitOne(1))
+                return;
+
+            // take picture around cursor
+            Debug.WriteLine("Collecting before image at {0} {1}", macroClickStep.X, macroClickStep.Y);
+            beforeClickSmallImage = ExtractCursorBitmap(macroClickStep.X, macroClickStep.Y);
+
+            Debug.WriteLine("Collecting before screen image for {0} {1}", macroClickStep.X, macroClickStep.Y);
+            var beforeClickScreenImage = ExtractScreenBitmap();
+
+            bool retrying = false;
+
+            while (true)
+            {
+                if (retrying)
+                    Debug.WriteLine("Retrying");
+
+                // send mouse click
+                Debug.WriteLine("Sending click");
+                SetCursorPos(macroClickStep.X, macroClickStep.Y);
+                mouse_event(MOUSEEVENTF_LEFTDOWN, macroClickStep.X, macroClickStep.Y, 0, 0);
+                mouse_event(MOUSEEVENTF_LEFTUP, macroClickStep.X, macroClickStep.Y, 0, 0);
+
+                // another short delay
+                if (WaitHandle.WaitOne(1))
+                    return;
+                Debug.WriteLine("Waiting {0}ms", shortDelay);
+                Thread.Sleep(shortDelay);
+                if (WaitHandle.WaitOne(1))
+                    return;
+
+                // take 'after' picture
+                Debug.WriteLine("Collecting after click image at {0} {1}", macroClickStep.X, macroClickStep.Y);
+                var afterClickSmallImage = ExtractCursorBitmap(macroClickStep.X, macroClickStep.Y);
+
+                Debug.WriteLine("Collecting after screen image for {0} {1}", macroClickStep.X, macroClickStep.Y);
+                var afterClickScreenImage = ExtractScreenBitmap();
+
+                // compare, if too similar then UI did not respond in time or there
+                // was interference (fuck playdom and their snow)
+                if (AreTooSimilar(beforeClickSmallImage, afterClickSmallImage) == true)
+                {
+                    Debug.WriteLine("Before-click and after-click images are too similar for {0},{1}", macroClickStep.X, macroClickStep.Y);
+
+#if DEBUG
+                    beforeClickSmallImage.Save(string.Format("{0}_{1}_click_before.bmp", macroClickStep.X, macroClickStep.Y), ImageFormat.Bmp);           
+                    afterClickSmallImage.Save(string.Format("{0}_{1}_click_after.bmp", macroClickStep.X, macroClickStep.Y), ImageFormat.Bmp);
+#endif                    
+
+                    if (AreTooSimilar(beforeClickScreenImage, afterClickScreenImage) == true)
+                    {
+                        Debug.WriteLine("Before-screen and after-screen images were too similar for {0},{1}", macroClickStep.X, macroClickStep.Y);
+
+#if DEBUG
+                        beforeClickScreenImage.Save(string.Format("{0}_{1}_screen_before.bmp", macroClickStep.X, macroClickStep.Y), ImageFormat.Bmp);
+                        afterClickScreenImage.Save(string.Format("{0}_{1}_screen_after.bmp", macroClickStep.X, macroClickStep.Y), ImageFormat.Bmp);
+#endif
+
+                        afterClickSmallImage.Dispose();
+                        retrying = true;
+                        continue;
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Before-screen and after-screen images were different enough for {0},{1}", macroClickStep.X, macroClickStep.Y);
+                        beforeClickSmallImage.Dispose();
+                        afterClickSmallImage.Dispose();
+                        beforeClickSmallImage = null;
+
+                        beforeClickScreenImage.Dispose();
+                        beforeClickScreenImage = null;
+
+                        retrying = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("Before-click and after-click images are different enough for {0},{1}", macroClickStep.X, macroClickStep.Y);
+                    // they were not too similar - UI click worked so break out of
+                    // verification loop
+                    beforeClickSmallImage.Dispose();
+                    afterClickSmallImage.Dispose();
+                    beforeClickSmallImage = null;
+
+                    beforeClickScreenImage.Dispose();
+                    beforeClickScreenImage = null;
+
+                    retrying = false;
+                    break;
+                }
+            }
+        }
+
+        private bool AreTooSimilar(Bitmap source, Bitmap updated)
+        {
+            ExhaustiveTemplateMatching tm = new ExhaustiveTemplateMatching(0);
             
-            _stepCompletedSubject.OnNext(stepNumber);
+            TemplateMatch[] matchings = tm.ProcessImage(source, updated);
+
+            Debug.WriteLine("Similarity = {0}", matchings[0].Similarity);
+
+            if (matchings[0].Similarity > 0.90)
+                return true;
+            else
+                return false;
+        }
+
+        private Bitmap ExtractScreenBitmap()
+        {
+            var clickSteps = _steps.OfType<MacroClickStep>();
+
+            var lowestY = clickSteps.Min(p => p.Y);
+            var lowestX = clickSteps.Min(p => p.X);
+
+            var highestY = clickSteps.Max(p => p.Y);
+            var highestX = clickSteps.Max(p => p.X);
+
+            int width = highestX - lowestX;
+            int height = highestY - lowestY;
+
+            var bmpScreenshot = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+
+            var pos = new Point(lowestX, lowestY);
+            using (Graphics g = Graphics.FromImage(bmpScreenshot))
+            {
+                g.CopyFromScreen(lowestX, lowestY, 0, 0, new Size(width, height), CopyPixelOperation.SourceCopy);
+            }
+
+            return bmpScreenshot;
+        }
+
+        private Bitmap ExtractCursorBitmap(int x, int y)
+        {
+            var bmpScreenshot = new Bitmap(32, 32, PixelFormat.Format24bppRgb);
+
+            var pos = new Point(x, y);
+            using (Graphics g = Graphics.FromImage(bmpScreenshot))
+            {
+                g.CopyFromScreen(pos.X - 16, pos.Y - 16, 0, 0, new Size(32, 32), CopyPixelOperation.SourceCopy);
+            }
+
+            return bmpScreenshot;
         }
     }
 }

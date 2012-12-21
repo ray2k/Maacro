@@ -39,6 +39,7 @@ namespace Maacro.ViewModel
         private string _DurationText;
         private bool _IsThreeMinute = false;
         private bool _IsTwentyMinute = false;
+        private bool _IsVerificationEnabled = false;
 
         protected IMacroDataValidator Validator { get; private set; }
         protected IMacroGenerator Generator { get; private set; }
@@ -52,6 +53,7 @@ namespace Maacro.ViewModel
             this.Player = player;
             this.KeyboardListener = keyboardListener;
             this.UIDelay = MacroData.Current.UIDelay;
+            this.IsVerificationEnabled = MacroData.Current.ClickVerification;
             this.StepProgress = 0;
             this.CurrentStepChunkCount = 1;
             this.TotalSteps = 1;
@@ -67,7 +69,7 @@ namespace Maacro.ViewModel
 
                     this.PlaybackEnabled = false;
 
-                    this.Player.Play(this.MacroSteps);
+                    this.Player.Play(this.MacroSteps, this.IsVerificationEnabled, this.UIDelay);
                     MessageBus.SendMessage<PlaybackStartedMessage>(new PlaybackStartedMessage());
                 }
             );
@@ -335,6 +337,16 @@ namespace Maacro.ViewModel
         protected bool IsPlaying
         {
             get { return !PlaybackEnabled; }
+        }
+
+        public bool IsVerificationEnabled
+        {
+            get { return _IsVerificationEnabled; }
+            set 
+            { 
+                _IsVerificationEnabled = this.RaiseAndSetIfChanged(vm => vm.IsVerificationEnabled, value);
+                MacroData.Current.ClickVerification = _IsVerificationEnabled;
+            }
         }
     }
 }

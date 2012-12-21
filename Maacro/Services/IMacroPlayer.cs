@@ -18,7 +18,7 @@ namespace Maacro.Services
 
     public interface IMacroPlayer
     {
-        void Play(IEnumerable<MacroStep> macro);
+        void Play(IEnumerable<MacroStep> macro, bool clickVerification, int uiDelay);
         void Stop();
 
         IObservable<int> IterationStarted { get; }

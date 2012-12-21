@@ -39,6 +39,7 @@
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Path=DurationText}" VerticalAlignment="Bottom" HorizontalAlignment="Left" Height="25" Margin="0,5,0,0"></TextBlock>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <CheckBox Content="Enable Click Verification" IsChecked="{Binding Path=IsVerificationEnabled}" Margin="0,0,10,0"></CheckBox>
                 <RadioButton GroupName="length" Content="3 minutes" IsChecked="{Binding Path=IsThreeMinute}" Command="{Binding Path=MakeThreeMinute}" Margin="0,0,20,0"></RadioButton>
                 <RadioButton GroupName="length" Content="20 minutes" IsChecked="{Binding Path=IsTwentyMinute}" Command="{Binding Path=MakeTwentyMinute}"></RadioButton>                
             </StackPanel>            

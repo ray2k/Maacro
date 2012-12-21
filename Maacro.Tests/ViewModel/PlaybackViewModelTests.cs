@@ -61,7 +61,7 @@ namespace Maacro.Tests.ViewModel
             var vm = CreateInstance();
             vm.MacroSteps.Add(new MacroClickStep());
 
-            MockPlayer.Setup(p => p.Play(vm.MacroSteps));
+            MockPlayer.Setup(p => p.Play(vm.MacroSteps, false, MacroData.Current.UIDelay));
 
             new TestScheduler().With(ts =>
                 {

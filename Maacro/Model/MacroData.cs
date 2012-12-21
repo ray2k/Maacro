@@ -21,6 +21,7 @@ namespace Maacro.Model
         private ReactiveCollection<DeploymentSlot> _Deployment;
         private static object _lock = new object();
         private DeployLength _Length = DeployLength.ThreeMinute;
+        private bool _ClickVerification = true;
 
         public static void SetCurrent(MacroData currentData)
         {
@@ -79,6 +80,12 @@ namespace Maacro.Model
         {
             get { return _Length; }
             set { _Length = this.RaiseAndSetIfChanged(vm => vm.Length, value); }
+        }
+
+        public bool ClickVerification
+        {
+            get { return _ClickVerification; }
+            set { _ClickVerification = this.RaiseAndSetIfChanged(vm => vm.ClickVerification, value); }
         }
     }
 }
